@@ -31,6 +31,10 @@ public:
     // Ball properties
     float radius;
     float friction;
+
+    //goalpost collision:
+    int checkGoalCollision();
+
 private:
     
     

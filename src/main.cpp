@@ -12,7 +12,7 @@ Field field;
 DBox dBox;
 GoalPost goalPost;
 Ball ball;
-Player* players[8];
+Player* players[2];
 
 int controlledPlayerIndex = 0; // Index of the currently controlled player
 
@@ -25,19 +25,59 @@ bool keyA = false;
 bool keyS = false;
 bool keyD = false;
 
+//goal storing
+int leftScore=0;
+int rightScore=0;
+
+
 void initPlayers()
 {
-    // Left team (purple) - 4 players
-    players[0] = new Player(-700, 0, 0);      // Forward
-    players[1] = new Player(-500, 300, 0);    // Midfielder top
-    players[2] = new Player(-500, -300, 0);   // Midfielder bottom
-    players[3] = new Player(-800, 0, 0);      // Goalkeeper (controlled)
-    
-    // Right team (red) - 4 players
-    players[4] = new Player(700, 0, 1);       // Forward
-    players[5] = new Player(500, 300, 1);     // Midfielder top
-    players[6] = new Player(500, -300, 1);    // Midfielder bottom
-    players[7] = new Player(800, 0, 1);       // Goalkeeper
+    // Left team (purple)
+    players[0] = new Player(-700,0,0);
+    //right player(red)
+    players[1] = new Player(700,0,1);
+
+}
+
+//score cirlces showing
+
+void drawGoalCircles(int score, float startX)
+{
+    float y=-1000.0f;
+    float radius = 50.0f;
+
+    glColor3f(1.0f, 1.0f, 0.0f);
+
+    for (int i = 0; i < score; i++)
+    {
+        float x = startX + i *50.0f;
+
+        glBegin(GL_POLYGON);
+        for (int j = 0; j < 20; j++)
+        {
+            float angle = 2.0f * 3.14159f * j / 20;
+            glVertex2f(x+cos(angle)*radius,
+                y+sin(angle)*radius);
+        }
+        glEnd();
+    }
+}
+
+//winning  2 goals
+void resetGame()
+{
+    leftScore = 0;
+    rightScore = 0;
+
+    ball.reset();
+
+    players[0]->x = -700.0f;
+    players[0]->y = 0.0f;
+
+    players[1]->x = 700.0f;
+    players[1]->y = 0.0f;
+
+    glutPostRedisplay();
 }
 void display()
 {
@@ -48,19 +88,21 @@ void display()
     glPushMatrix();
     field.draw();
     glPopMatrix();
-    
+
+
+
     // draw DBox
     glPushMatrix();
     dBox.draw();
     glPopMatrix();
-    
+
     //goal posts
     glPushMatrix();
     goalPost.draw();
     glPopMatrix();
-    
+
     //players
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 2; i++) {
         glPushMatrix();
         players[i]->draw();
         glPopMatrix();
@@ -71,7 +113,7 @@ void display()
     float px = players[controlledPlayerIndex]->x;
     float py = players[controlledPlayerIndex]->y;
     float pr = players[controlledPlayerIndex]->radius + 10;
-    
+
     glBegin(GL_LINE_LOOP);
     for (int i = 0; i < 20; i++) {
         float angle = 2.0f * 3.14159f * i / 20;
@@ -80,123 +122,82 @@ void display()
         glVertex2f(cx, cy);
     }
     glEnd();
-    
+
     glPopMatrix();
     //ball
+    int currentTime = glutGet(GLUT_ELAPSED_TIME);
+    float deltaTime = (currentTime - lastTime) / 1000.f;
+    lastTime = currentTime;
+
+    ball.update(deltaTime);
+
+    int goal=ball.checkGoalCollision();
+
+    if (goal==1)
+    {
+        leftScore++;
+        ball.reset();
+        players[0]->x = -700.0f;
+        players[0]->y = 0.0f;
+
+        players[1]->x = 700.0f;
+        players[1]->y = 0.0f;
+        glutPostRedisplay();
+    }else if (goal==2)
+    {
+        rightScore++;
+        ball.reset();
+        players[0]->x = -700.0f;
+        players[0]->y = 0.0f;
+
+        players[1]->x = 700.0f;
+        players[1]->y = 0.0f;
+        glutPostRedisplay();
+    }
+    if (leftScore >=2 || rightScore >=2)
+    {
+        resetGame();
+        glutPostRedisplay();
+    }
     glPushMatrix();
     ball.draw();
     glPopMatrix();
+
+    //score circles draw
+    drawGoalCircles(leftScore, -1400.0f);
+    drawGoalCircles(rightScore, 1000.0f);
+
     glFlush();
+
+
 }
 
-void update(int value) {
-    // Calculate delta time (time since last update)
-    int currentTime = glutGet(GLUT_ELAPSED_TIME);
-    float deltaTime = (currentTime - lastTime) / 1000.0f;
-    lastTime = currentTime;
-    
-    // Limit delta time to prevent large jumps
-    if (deltaTime > 0.05f) deltaTime = 0.05f;
-    
-    // Move controlled player based on keys
-    float speed = 300.0f * deltaTime;
-    if (keyW) players[controlledPlayerIndex]->move(0, speed);
-    if (keyS) players[controlledPlayerIndex]->move(0, -speed);
-    if (keyA) players[controlledPlayerIndex]->move(-speed, 0);
-    if (keyD) players[controlledPlayerIndex]->move(speed, 0);
-    // Update ball physics
-    ball.update(deltaTime);
-    
-    // Request redraw
-    glutPostRedisplay();
-    
-    // Schedule next update (16ms = ~60 FPS)
-    glutTimerFunc(16, update, 0);
-}
-void mouse(int button, int state, int x, int y) {
-    // Convert mouse coordinates to OpenGL coordinates
-    // Window is 1000x1000, coordinates are -1000 to +1000
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        float glX = (x - 500) * 2.0f;
-        float glY = (500 - y) * 2.0f;
-        
-        // Calculate kick direction from ball to click position
-        float dx = glX - 0.0f;  // Assuming ball starts at center
-        float dy = glY - 0.0f;
-        
-        // Normalize and scale for kick power
-        float length = sqrt(dx * dx + dy * dy);
-        if (length > 0) {
-            dx = (dx / length) * 500.0f;
-            dy = (dy / length) * 500.0f;
-            ball.kick(dx, dy);
-            printf("Ball kicked towards (%.1f, %.1f)\n", glX, glY);
-        }
-    }
-}
+// keyboard wasd for p1 and ijkl for p2
 
-void keyboardInput(const unsigned char key, int x, int y)
+void keyboard(unsigned char key, int x, int y)
 {
-    switch(key) {
-    case 'w':
-    case 'W':
-        keyW = true;
-        break;
-    case 's':
-    case 'S':
-        keyS = true;
-        break;
-    case 'a':
-    case 'A':
-        keyA = true;
-        break;
-    case 'd':
-    case 'D':
-        keyD = true;
-        break;
-    case 9:  // TAB key
-        controlledPlayerIndex = (controlledPlayerIndex + 1) % 4;  // Cycle through team
-        printf("Controlling player %d\n", controlledPlayerIndex);
-        break;
-    case 'r':
-    case 'R':
-        // Reset ball to center
-        ball.reset();
-        printf("Ball reset to center\n");
-        break;
-            
-    case ' ':
-        // Kick ball (for testing)
-        ball.kick(300.0f, 200.0f);
-        printf("Ball kicked!\n");
-        break;
-            
-    case 27:  // ESC key
-        exit(0);
-        break;
+    switch (key)
+    {
+        //for player[0]
+    case 'w': players[0]->moveUp();break;
+    case 's': players[0]->moveDown();break;
+    case 'a': players[0]->moveLeft();break;
+    case 'd': players[0]->moveRight();break;
+
+        //for player[1]
+    case 'i': players[1]->moveUp();break;
+    case 'j': players[1]->moveLeft();break;
+    case 'k': players[1]->moveDown();break;
+    case 'l': players[1]->moveRight();break;
+
+    case 27: exit(0);
     }
-    
-    glutPostRedisplay();
-}
-void keyboardUp(unsigned char key, int x, int y) {
-    switch(key) {
-    case 'w':
-    case 'W':
-        keyW = false;
-        break;
-    case 's':
-    case 'S':
-        keyS = false;
-        break;
-    case 'a':
-    case 'A':
-        keyA = false;
-        break;
-    case 'd':
-    case 'D':
-        keyD = false;
-        break;
-    }
+
+    players[0]->kickBall(ball);
+    players[1]->kickBall(ball);
+
+
+    glutPostRedisplay(); //redrawafter exc.
 }
 
 int main(int argc, char** argv)
@@ -214,26 +215,17 @@ int main(int argc, char** argv)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     gluOrtho2D(-1500, 1500, -1500, 1500);
-    
+
     // Initialize players
     initPlayers();
-    
+
     // Initialize time
     lastTime = glutGet(GLUT_ELAPSED_TIME);
-    
-    // Give the ball an initial kick for demonstration
-    ball.kick(400.0f, 300.0f);
-    
-    
-    // Register the display callback
+
+
     glutDisplayFunc(display);
-    // keyboard func
-    glutKeyboardFunc(keyboardInput);
-    glutKeyboardUpFunc(keyboardUp);
-    // mouse func
-    glutMouseFunc(mouse);
-    // Timer for updates
-    glutTimerFunc(0, update, 0);
+    //movement
+    glutKeyboardFunc(keyboard);
     // Start the main event loop
     glutMainLoop();
     return 0;

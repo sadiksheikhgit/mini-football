@@ -3,13 +3,17 @@
 //
 
 #include "../../include/entities/Player.h"
+#include "../../include/entities/Ball.h"
+
 #include <GL/glut.h>
+#include <cmath>
+
 
 Player::Player(float startX, float startY, int teamNumber) {
-    x = startX;
-    y = startY;
+    x = startX; //horPos
+    y = startY; //verPos
     team = teamNumber;
-    radius = 25.0f;
+    radius = 40.0f;
 }
 
 void Player::draw() {
@@ -65,3 +69,60 @@ void Player::plotCirclePoints(int xc, int yc, int x, int y) {
     glVertex2f(xc + y, yc - x);
     glEnd();
 }
+
+// later move add-ons implementation
+void Player::moveUp()
+{
+    y+=20.0f;
+}
+void Player::moveDown()
+{
+    y-=20.0f;
+}
+
+void Player::moveLeft()
+{
+    x-=20.0f;
+}
+
+void Player::moveRight()
+{
+    x+=20.0f;
+}
+
+bool Player::iscollisionWithBall (Ball &ball){
+    float dx= x-ball.x;  // player distance-ball distance logic
+    float dy = y-ball.y;
+
+    float distance = sqrt(dx*dx + dy*dy); // player to ball straight line
+    return distance< (radius +ball.radius); // if touch, collison.
+
+}
+
+// kick suii
+
+void Player::kickBall(Ball& ball)
+{
+    if (iscollisionWithBall(ball))
+    {
+
+
+        float dx = ball.x - x;
+        float dy = ball.y - y;
+
+        float distance = sqrt(dx*dx + dy*dy);
+
+        if (distance==0)
+            return;
+
+
+        dx/=distance;
+        dy/=distance;
+
+        float kicPower =100.0f;
+
+        ball.x += dx*kicPower;
+        ball.y += dy*kicPower;
+    }
+}
+

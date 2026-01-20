@@ -16,7 +16,7 @@ Ball::Ball() {
     vy = 0.0f;
     
     // Ball properties
-    radius = 15.0f;
+    radius = 30.0f;
     friction = 0.98f;  // Slow down gradually
     
     // Field boundaries (matching Field.cpp dimensions)
@@ -141,4 +141,29 @@ void Ball::plotCirclePoints(int xc, int yc, int x, int y) {
         glVertex2f(xc - y, yc - x);
         glVertex2f(xc + y, yc - x);
     glEnd();
+}
+// goal post goal checking with ball collison
+int Ball::checkGoalCollision()
+{
+    float leftGoalX=-1100.0f+200.0f;
+    float goalTop = 250.0f;
+    float goalBottom = -250.0f;
+
+    if (x-radius <= leftGoalX &&
+        y >=goalBottom &&
+        y <= goalTop)
+    {
+        return 2;  //for right team
+    }
+
+
+    float rightGoalX = 900.0f;
+    if (x+radius >= rightGoalX &&
+        y >=goalBottom &&
+        y <= goalTop)
+    {
+        return 1; //for left team
+    }
+    return 0;
+
 }
