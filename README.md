@@ -1,7 +1,17 @@
 # Mini Football game
 
 ----
-Simple game based on OpenGL libraries with C++. Player has to score as many goals as possible in a limited time.
+Simple game based on OpenGL libraries with C++. Player has to score 3 three goals to win.
+
+----
+## Table of Contents
+- [Demo GUI](#demo-gui)
+- [Implemented GUI](#implemented-gui)
+- [Controls](#controls)
+- [Features](#features)
+- [Future Improvements](#future-improvements)
+- [For teammates](#for-teammates)
+- [Group Members](#group-members)
 
 ## Demo GUI
 ![img.png](assets/demo-gui.png)
