@@ -27,9 +27,9 @@ bool keyA = false;
 bool keyS = false;
 bool keyD = false;
 
-//goal storing
-int leftScore=0;
-int rightScore=0;
+// goal storing
+int leftScore = 0;
+int rightScore = 0;
 
 // goal tracking
 int lastScorer = -1;
@@ -41,18 +41,20 @@ int winner = -1;
 void initPlayers()
 {
     // Left team (purple)
-    players[0] = new Player(-700,0,0);
-    //right player(red)
-    players[1] = new Player(700,0,1);
-
+    players[0] = new Player(-700, 0, 0);
+    // right player(red)
+    players[1] = new Player(700, 0, 1);
 }
 
 
-//winning  2 goals
+// winning  3 goals
 void resetGame()
 {
     leftScore = 0;
     rightScore = 0;
+    lastScorer = -1;
+    winner = -1;
+    gameOver = false;
 
     ball.reset();
 
@@ -61,23 +63,27 @@ void resetGame()
 
     players[1]->x = 700.0f;
     players[1]->y = 0.0f;
-
+    
     glutPostRedisplay();
 }
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT);
-    glColor3f(1, 1, 1);
-    // Draw the field
+    // scale everything 120%
     glPushMatrix();
-    field.draw();
-    glPopMatrix();
+    glScalef(1.2f, 1.2f, 1.0f);
 
+    glColor3f(1, 1, 1);
     // scoreboard
     glPushMatrix();
     glTranslatef(0.0f, 700.0f, 1.0f);
     glScalef(1.80f, 1.80f, 1.0f); // 180% bigger
-    scoreboard.draw(leftScore, rightScore,lastScorer, gameOver, winner);
+    scoreboard.draw(leftScore, rightScore, lastScorer, gameOver, winner);
+    glPopMatrix();
+
+    // Draw the field
+    glPushMatrix();
+    field.draw();
     glPopMatrix();
 
     // draw DBox
@@ -85,13 +91,14 @@ void display()
     dBox.draw();
     glPopMatrix();
 
-    //goal posts
+    // goal posts
     glPushMatrix();
     goalPost.draw();
     glPopMatrix();
 
-    //players
-    for (int i = 0; i < 2; i++) {
+    // players
+    for (int i = 0; i < 2; i++)
+    {
         glPushMatrix();
         players[i]->draw();
         glPopMatrix();
@@ -103,94 +110,129 @@ void display()
     float py = players[controlledPlayerIndex]->y;
     float pr = players[controlledPlayerIndex]->radius + 10;
 
-    glBegin(GL_LINE_LOOP);
-    for (int i = 0; i < 20; i++) {
-        float angle = 2.0f * 3.14159f * i / 20;
-        float cx = px + pr * cos(angle);
-        float cy = py + pr * sin(angle);
-        glVertex2f(cx, cy);
-    }
     glEnd();
     glPopMatrix();
-    //ball
+    // ball
+    glPushMatrix();
+    ball.draw();
+    glPopMatrix();
+    glFlush();
+    glPopMatrix();
+}
+void update(int value)
+{
     int currentTime = glutGet(GLUT_ELAPSED_TIME);
     float deltaTime = (currentTime - lastTime) / 1000.f;
     lastTime = currentTime;
 
-    ball.update(deltaTime);
-
-    int goal=ball.checkGoalCollision();
-
-    if (goal==1)
+    if (!gameOver)
     {
-        leftScore++;
-        lastScorer = 0; // red
-        ball.reset();
-        players[0]->x = -700.0f;
-        players[0]->y = 0.0f;
+        ball.update(deltaTime);
+        int goal = ball.checkGoalCollision();
 
-        players[1]->x = 700.0f;
-        players[1]->y = 0.0f;
-        glutPostRedisplay();
-    }else if (goal==2)
-    {
-        rightScore++;
-        lastScorer = 1; // purple
-        ball.reset();
-        players[0]->x = -700.0f;
-        players[0]->y = 0.0f;
+        if (goal == 1)
+        {
+            leftScore++;
+            lastScorer = 0; // red
+            ball.reset();
+            players[0]->x = -700.0f;
+            players[0]->y = 0.0f;
 
-        players[1]->x = 700.0f;
-        players[1]->y = 0.0f;
-        glutPostRedisplay();
-    } else if (leftScore == 3 || rightScore == 3)
-    {
-        // resetGame();
-        gameOver = true;
-        winner = (leftScore == 3) ? 0 : 1;
-        glutPostRedisplay();
+            players[1]->x = 700.0f;
+            players[1]->y = 0.0f;
+            glutPostRedisplay();
+        }
+        else if (goal == 2)
+        {
+            rightScore++;
+            lastScorer = 1; // purple
+            ball.reset();
+            players[0]->x = -700.0f;
+            players[0]->y = 0.0f;
+
+            players[1]->x = 700.0f;
+            players[1]->y = 0.0f;
+            glutPostRedisplay();
+        }
+        else if (leftScore == 3 || rightScore == 3)
+        {
+            // resetGame();
+            gameOver = true;
+            winner = (leftScore == 3) ? 0 : 1;
+            glutPostRedisplay();
+        }
+        glutTimerFunc(16, update, 0); // approx 60 FPS
     }
-    glPushMatrix();
-    ball.draw();
-    glPopMatrix();
-    
-
-    glFlush();
-
-
+    glutPostRedisplay();
+    // glutTimerFunc(16, update, 0); // approx 60 FPS
 }
 
 // keyboard wasd for p1 and ijkl for p2
 
 void keyboard(unsigned char key, int x, int y)
 {
-    switch (key)
+    if (!gameOver)
     {
-        //for player[0]
-    case 'w': players[0]->moveUp();break;
-    case 's': players[0]->moveDown();break;
-    case 'a': players[0]->moveLeft();break;
-    case 'd': players[0]->moveRight();break;
+        switch (key)
+        {
+            // for player[0]
+        case 'w':
+            players[0]->moveUp();
+            break;
+        case 's':
+            players[0]->moveDown();
+            break;
+        case 'a':
+            players[0]->moveLeft();
+            break;
+        case 'd':
+            players[0]->moveRight();
+            break;
 
-        //for player[1]
-    case 'i': players[1]->moveUp();break;
-    case 'j': players[1]->moveLeft();break;
-    case 'k': players[1]->moveDown();break;
-    case 'l': players[1]->moveRight();break;
-
-    case 27: exit(0);
+            // for player[1]
+        case 'i':
+            players[1]->moveUp();
+            break;
+        case 'j':
+            players[1]->moveLeft();
+            break;
+        case 'k':
+            players[1]->moveDown();
+            break;
+        case 'l':
+            players[1]->moveRight();
+            break;
+        case 27:
+            exit(0);
+        }
+        glutPostRedisplay();
+    }
+    else if (gameOver)
+    {
+        switch (key)
+        {
+        case 'r':
+            resetGame();
+            lastTime = glutGet(GLUT_ELAPSED_TIME);
+            glutTimerFunc(0, update, 0);
+            break;
+        case 27:
+            exit(0);
+        }
+        glutPostRedisplay();
     }
 
     players[0]->kickBall(ball);
     players[1]->kickBall(ball);
 
 
-    glutPostRedisplay(); //redrawafter exc.
+    glutPostRedisplay(); // redrawafter exc.
 }
 
 void reshape(int w, int h)
 {
-    if (h == 0) h = 1;
+    if (h == 0)
+        h = 1;
 
     glViewport(0, 0, w, h);
 
@@ -199,10 +241,13 @@ void reshape(int w, int h)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    if (aspect >= 1.0f) {
+    if (aspect >= 1.0f)
+    {
         // Wide window
         gluOrtho2D(-1500 * aspect, 1500 * aspect, -1500, 1500);
-    } else {
+    }
+    else
+    {
         // Tall window
         gluOrtho2D(-1500, 1500, -1500 / aspect, 1500 / aspect);
     }
@@ -236,8 +281,9 @@ int main(int argc, char** argv)
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
-    //movement
+    // movement
     glutKeyboardFunc(keyboard);
+    glutTimerFunc(0, update, 0);
     // Start the main event loop
     glutMainLoop();
     return 0;
