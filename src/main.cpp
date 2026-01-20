@@ -7,11 +7,13 @@
 #include "../include/entities/Field.h"
 #include "../include/entities/GoalPost.h"
 #include "../include/entities/Player.h"
+#include "../include/entities/Scoreboard.h"
 
 Field field;
 DBox dBox;
 GoalPost goalPost;
 Ball ball;
+Scoreboard scoreboard;
 Player* players[2];
 
 int controlledPlayerIndex = 0; // Index of the currently controlled player
@@ -89,7 +91,12 @@ void display()
     field.draw();
     glPopMatrix();
 
-
+    // scoreboard
+    glPushMatrix();
+    glTranslatef(0.0f, 700.0f, 1.0f);
+    glScalef(1.80f, 1.80f, 1.0f); // 180% bigger
+    scoreboard.draw(leftScore, rightScore);
+    glPopMatrix();
 
     // draw DBox
     glPushMatrix();
